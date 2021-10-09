@@ -1,0 +1,87 @@
+import nltk
+import pandas as pd
+import re
+from Pre_Processing import stopword_rem
+from Pre_Processing import lemmitization
+
+
+def calculate_uni_grams(token):
+    num_of_words = len(token)
+
+    freq = {}
+    for word in token:
+        word = lemmitization(word)
+        if word in freq:
+            freq[word] += 1
+        else:
+            freq[word] = 1
+
+    for key in freq:
+        freq[key] = freq[key] / num_of_words
+
+    return freq
+
+
+def calculate_bi_grams(token):
+    bigram = list(nltk.bigrams(token))
+    num_of_bigram = len(bigram)
+    freq = {}
+    for word in bigram:
+        # ('the', 'abc')
+        word_1 = lemmitization(word[0])
+        word_2 = lemmitization(word[1])
+        word_str = word_1 + ' ' + word_2
+        if word_str in freq:
+            freq[word_str] += 1
+        else:
+            freq[word_str] = 1
+
+    for value in freq:
+        freq[value] = freq[value] / num_of_bigram
+
+    return freq
+
+
+def output_to_csv(file_name, data_list, tweet_df):
+    df = pd.DataFrame(data_list)
+    df = df.fillna(0)
+    df.index.name = "Tweet #"
+    df['text'] = tweet_df['text']
+    cols = df.columns.tolist()
+    cols = cols[-1:] + cols[:-1]
+    df = df[cols]
+    print(df)
+    df.to_csv(file_name)
+
+
+def main():
+    uni_gram_list = []
+    bi_gram_list = []
+
+    Tweets_df = pd.read_csv("C:/Users/Asim Zubair/Desktop/CUST 07/FYP/POS tagging/bagofwords/abc.csv")
+
+    texts_list = Tweets_df['text'].tolist()
+    # texts_list[0] = "Playing...."
+
+    for i in range(len(texts_list)):
+        texts_list[i] = texts_list[i].lower()
+        texts_list[i] = re.sub(r'\W', ' ', texts_list[i])
+        texts_list[i] = re.sub(r'\s+', ' ', texts_list[i])
+
+    for text in texts_list:
+        # Pre-processing if required
+
+        token = nltk.word_tokenize(text)
+        token = stopword_rem(token)
+
+        # Pre-processing if required
+
+        uni_gram_list.append(calculate_uni_grams(token))
+        bi_gram_list.append(calculate_bi_grams(token))
+
+    output_to_csv('uni_gram_output.csv', uni_gram_list, Tweets_df)
+    output_to_csv('bi_gram_output.csv', bi_gram_list, Tweets_df)
+
+
+if __name__ == "__main__":
+    main()

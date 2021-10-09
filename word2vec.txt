@@ -1,0 +1,98 @@
+import xlrd
+import sys
+import codecs
+import json
+import nltk
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from nltk.tokenize import sent_tokenize
+import gensim
+import re
+from gensim.models import Word2Vec
+import array as ar
+import xlsxwriter
+
+# nltk.download('punkt')
+# nltk.download('stopwords')
+from Preprocessing import lemmitization
+
+
+def tokenize_Words(tokenized_text):
+    processed_article = tokenized_text.lower()
+    processed_article = re.sub('[^a-zA-Z]', ' ', processed_article)
+    processed_article = re.sub(r'\s+', ' ', processed_article)
+
+    # Preparing the dataset
+    all_sentences = nltk.sent_tokenize(processed_article)
+    all_words = [nltk.word_tokenize(sent) for sent in all_sentences]
+    # Removing Stop Words
+    from nltk.corpus import stopwords
+    for i in range(len(all_words)):
+        all_words[i] = [w for w in all_words[i] if w not in stopwords.words('english')]
+    return all_words
+
+
+loc = "wildfire.xlsx"
+wb = xlrd.open_workbook(loc)
+sheet = wb.sheet_by_index(0)
+# For row 0 and column 0
+tokenized_text = ""
+reviewList = []
+
+for i in range(1, sheet.nrows):
+    tokenized_text = tokenized_text + " " + sheet.cell_value(i, 0)
+    reviewList.append(sheet.cell_value(i, 0))
+print(len(reviewList))
+tokenized_text = tokenize_Words(tokenized_text)
+print(tokenized_text)
+
+# Lemmatization
+
+
+model = Word2Vec(sentences=tokenized_text, min_count=1, workers=1, sg=1, window=5, seed=128)
+vecReview = []
+lst = ""
+for rvw in reviewList:
+    lst = rvw
+    words = tokenize_Words(rvw)
+    for wordList in words:
+        vec = [model.wv[word] for word in wordList]
+        vecReview.append(vec)
+
+print(lst)
+print(len(vecReview))
+vecfinal = []
+for vr in vecReview:
+    count = 0
+    temp = []
+    for wr in vr:
+        if count == 0:
+            count = 1
+            for cnt in range(0, 100):
+                temp.append(wr[cnt])
+        else:
+            for cnt in range(0, 100):
+                temp[cnt] = temp[cnt] + wr[cnt]
+    vecfinal.append(temp)
+# with open("tt.txt", "w") as output:
+#    output.write(str(vecfinal))
+
+print(len(vecfinal))
+workbook = xlsxwriter.Workbook('res.xlsx')
+worksheet = workbook.add_worksheet()
+
+for c in range(0, 100):
+    worksheet.write(0, c, 'D' + str(c + 1))
+
+col = 0
+row = 1
+
+for ii in vecfinal:
+    col = 0
+    for jj in ii:
+        worksheet.write(row, col, jj)
+        col = col + 1
+    row = row + 1
+
+workbook.close()
+print(vecfinal)

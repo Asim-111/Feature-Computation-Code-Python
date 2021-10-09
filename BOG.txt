@@ -1,0 +1,77 @@
+import re
+
+import nltk
+import pandas as pd
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+from n_gram import output_to_csv
+from Pre_Processing import stopword_rem
+from Pre_Processing import lemmitization
+
+#wordnet_lemmatizer = WordNetLemmatizer()
+
+
+
+#def stopword_rem(token):
+    #tokens_without_sw = [word for word in token if not word in stopwords.words()]
+    #return tokens_without_sw
+
+#def lemmitization(token):
+    #token = wordnet_lemmatizer.lemmatize(token, pos="v")
+    #return token
+
+
+
+def main():
+    Tweets_df = pd.read_csv("C:/Users/Asim Zubair/Desktop/CUST 07/FYP/POS tagging/bagofwords/abc.csv")
+    texts_list = Tweets_df['text'].tolist()
+    # texts_list[0] = "Playing...."
+    for i in range(len(texts_list)):
+        texts_list[i] = texts_list[i].lower()
+        # Return a match at every NON word character (characters NOT between a and Z. Like "!", "?" white-space etc.)
+        texts_list[i] = re.sub(r'\W', ' ', texts_list[i])
+        # Replace all white-space characters with ""
+        texts_list[i] = re.sub(r'\s+', ' ', texts_list[i])
+        # TODO Number remove
+
+    bag_of_words_list = []
+    count = 0
+
+    for sentence in texts_list:
+        wordfreq = {}
+        tokens = nltk.word_tokenize(sentence)
+        # List of words/tokens
+        #stopwords
+        ftoken=stopword_rem(tokens)
+
+
+        """
+        ['The', 'The', 'Asim']
+        wordfreq['The'] 
+        wordfreq {
+            'key': value
+            The: 2
+            Asim: 1
+        }
+        sentence_1 = ['The', 'The', 'Asim']
+        sentence_2 = ['The', 'BAG', 'Asim']
+        
+        [{}, {}, {}]
+        """
+        for token in ftoken:
+            # Token 1 word
+            token=lemmitization(token)
+            #token = wordnet_lemmatizer.lemmatize(token, pos="v")
+            if token not in wordfreq.keys():
+                wordfreq[token] = 1
+            else:
+                wordfreq[token] += 1
+
+        count += 1
+        bag_of_words_list.append(wordfreq)
+
+    output_to_csv('bag_of_words_output.csv', bag_of_words_list, Tweets_df)
+
+if __name__ == "__main__":
+    main()
